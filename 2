@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gacha Starjam Tang - Rarity Edition</title>
+    <style>
+        :root {
+            --common: #95a5a6;
+            --epic: #9b59b6;
+            --legendary: #f1c40f;
+            --bg-dark: #1a1a2e;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            background-color: var(--bg-dark); color: white; padding: 20px;
+            min-height: 100vh; justify-content: center;
+        }
+
+        .rarity-info {
+            display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.8rem;
+        }
+        .rarity-tag { padding: 4px 10px; border-radius: 4px; font-weight: bold; }
+
+        .container { 
+            display: flex; flex-wrap: wrap; justify-content: center; 
+            gap: 15px; max-width: 700px;
+        }
+
+        .box {
+            width: 130px; height: 190px; background-color: #16213e;
+            border: 2px solid #444; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .box:hover { transform: translateY(-5px); border-color: #eee; }
+
+        /* Badge Kelangkaan */
+        .badge {
+            position: absolute; top: 0; width: 100%; text-align: center;
+            font-size: 10px; font-weight: bold; padding: 2px 0; color: #000;
+            display: none;
+        }
+
+        /* Tampilan Berdasarkan Kelangkaan */
+        .box.common { border-color: var(--common); background: #2c3e50; }
+        .box.common .badge { display: block; background: var(--common); }
+
+        .box.epic { border-color: var(--epic); background: #4a148c; animation: pulse-purple 2s infinite; }
+        .box.epic .badge { display: block; background: var(--epic); color: white; }
+
+        .box.legendary { 
+            border-color: var(--legendary); 
+            background: linear-gradient(45deg, #b8860b, #f1c40f);
+            animation: glow-gold 1s infinite alternate;
+            transform: scale(1.1); z-index: 10;
+        }
+        .box.legendary .badge { display: block; background: #fff; color: #000; }
+
+        @keyframes glow-gold {
+            from { box-shadow: 0 0 10px #f1c40f; }
+            to { box-shadow: 0 0 30px #f1c40f; }
+        }
+        @keyframes pulse-purple {
+            0% { box-shadow: 0 0 0px var(--epic); }
+            50% { box-shadow: 0 0 15px var(--epic); }
+            100% { box-shadow: 0 0 0px var(--epic); }
+        }
+
+        .result-img { width: 80%; border-radius: 8px; margin-top: 15px; }
+        #message { margin-top: 30px; font-size: 1.2rem; font-weight: bold; min-height: 1.5em; }
+        
+        .btn-reset { 
+            margin-top: 20px; padding: 10px 30px; cursor: pointer; border: none; 
+            border-radius: 5px; background: #fff; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Starjam Tang Gacha</h1>
+    
+    <div class="rarity-info">
+        <span class="rarity-tag" style="background: var(--common); color: #000;">COMMON (70%)</span>
+        <span class="rarity-tag" style="background: var(--epic); color: #fff;">EPIC (25%)</span>
+        <span class="rarity-tag" style="background: var(--legendary); color: #000;">LEGENDARY (5%)</span>
+    </div>
+
+    <div class="container" id="box-container">
+        <div class="box" onclick="openBox(0)">?</div>
+        <div class="box" onclick="openBox(1)">?</div>
+        <div class="box" onclick="openBox(2)">?</div>
+        <div class="box" onclick="openBox(3)">?</div>
+        <div class="box" onclick="openBox(4)">?</div>
+    </div>
+
+    <div id="message"></div>
+    <button class="btn-reset" onclick="resetGame()">Coba Lagi</button>
+
+    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
+    <script>
+        let isFirstClick = true;
+        let gameOver = false;
+        let boxData = [];
+        const imgHadiah = "https://files.catbox.moe/kge89s.png"; 
+
+        function setupPrizes(firstIndex) {
+            // Tentukan tipe setiap kotak
+            // 1 Legendary (Winner), 1 Epic (Rare Zonk), 3 Common (Zonk)
+            let types = ["legendary", "epic", "common", "common", "common"];
+            
+            // Shuffle
+            types.sort(() => Math.random() - 0.5);
+
+            // Anti-Jackpot Klik Pertama
+            if (types[firstIndex] === "legendary") {
+                let newPos = (firstIndex + 1) % 5;
+                [types[firstIndex], types[newPos]] = [types[newPos], types[firstIndex]];
+            }
+            boxData = types;
+        }
+
+        function openBox(index) {
+            if (gameOver) return;
+            if (isFirstClick) {
+                setupPrizes(index);
+                isFirstClick = false;
+            }
+
+            const boxes = document.querySelectorAll('.box');
+            const currentBox = boxes[index];
+            const type = boxData[index];
+            
+            if (currentBox.classList.contains('open')) return;
+            currentBox.classList.add('open', type);
+
+            if (type === "legendary") {
+                document.getElementById('snd-win').play();
+                currentBox.innerHTML = `
+                    <div class="badge">LEGENDARY</div>
+                    <img src="${imgHadiah}" class="result-img">
+                    <div style="font-size:10px; margin-top:5px;">STARJAM TANG</div>
+                `;
+                document.getElementById('message').innerHTML = "✨ JACKPOT! KAMU DAPAT STARJAM TANG! ✨";
+                document.getElementById('message').style.color = "var(--legendary)";
+                gameOver = true;
+            } else if (type === "epic") {
+                document.getElementById('snd-click').play();
+                currentBox.innerHTML = `
+                    <div class="badge">EPIC</div>
+                    <div style="font-size:3rem;">💎</div>
+                    <div style="font-size:10px;">HAMPIR SAJA!</div>
+                `;
+                document.getElementById('message').innerText = "Waduh, dapet Epic Zonk! Dikit lagi...";
+                document.getElementById('message').style.color = "var(--epic)";
+            } else {
+                document.getElementById('snd-click').play();
+                currentBox.innerHTML = `
+                    <div class="badge">COMMON</div>
+                    <div style="font-size:2rem;">🗑️</div>
+                    <div style="font-size:10px;">ZONK</div>
+                `;
+                document.getElementById('message').innerText = "Zonk biasa...";
+                document.getElementById('message').style.color = "var(--common)";
+            }
+        }
+
+        function resetGame() {
+            isFirstClick = true;
+            gameOver = false;
+            document.getElementById('message').innerText = "";
+            const boxes = document.querySelectorAll('.box');
+            boxes.forEach(box => {
+                box.innerHTML = "?";
+                box.className = "box";
+            });
+        }
+    </script>
+</body>
+</html>
